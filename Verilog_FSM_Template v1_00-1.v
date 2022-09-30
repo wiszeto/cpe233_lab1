@@ -20,7 +20,7 @@
 // 
 //////////////////////////////////////////////////////////////////////////////////
 
-module fsm(go, rco, A_out, B_out, out_out, reset_n, ld_odd, odd, up, ld_A, ld_B, ld_out, sel_1, sel_2, cntr_clr, clk); 
+module fsm(go, rco, A_out, B_out, out_out, reset_n, ld_odd, odd, we, up, ld_A, ld_B, ld_out, sel_1, sel_2, cntr_clr, clk); 
     input  go, clk;
     input [7:0] A_out;
     input [7:0] B_out;
@@ -36,6 +36,7 @@ module fsm(go, rco, A_out, B_out, out_out, reset_n, ld_odd, odd, up, ld_A, ld_B,
     output reg sel_1;
     output reg sel_2;
     output reg cntr_clr;
+    output reg we;
 
     
     //- next state & present state variables
@@ -55,7 +56,7 @@ module fsm(go, rco, A_out, B_out, out_out, reset_n, ld_odd, odd, up, ld_A, ld_B,
     //- model the next-state and output decoders
     always @ (*)
     begin
-       ld_A = 0; ld_B = 0; ld_out = 0; sel_1 = 0; sel_2 = 0; up = 0; ld_odd = 0; cntr_clr = 0;// assign all outputs
+       ld_A = 0; ld_B = 0; ld_out = 0; sel_1 = 0; sel_2 = 0; up = 0; ld_odd = 0; we = 0; cntr_clr = 0;// assign all outputs
        case(PS)
           init:
              begin
@@ -65,13 +66,17 @@ module fsm(go, rco, A_out, B_out, out_out, reset_n, ld_odd, odd, up, ld_A, ld_B,
                 ld_B = 1; 
                 ld_out = 0;
                 ld_odd = 0;
-                cntr_clr = 1;
-                up = 0;
+                we = 0;
+                up = 1;
                 if (go == 1)
                     begin
+                        ld_odd = 1;
+                        cntr_clr = 1;
+                        we = 1;
                         NS = start;
                     end
                 else
+                if (go == 0)
                     begin 
                         NS = init;
                     end 
@@ -87,6 +92,14 @@ module fsm(go, rco, A_out, B_out, out_out, reset_n, ld_odd, odd, up, ld_A, ld_B,
                 ld_out = 1;
                 ld_odd = 1;
                 cntr_clr = 0;
+                if (odd == 1)
+                begin
+                we = 1;
+                end
+                else
+                begin
+                we = 0;
+                end
                 up = 0;
                 NS = calc;
             end
@@ -117,9 +130,9 @@ module fsm(go, rco, A_out, B_out, out_out, reset_n, ld_odd, odd, up, ld_A, ld_B,
                 ld_A = 0; 
                 ld_B = 1; 
                 ld_out = 0;
-                ld_odd = 1;
-                cntr_clr = 0;
+                ld_odd = 0;
                 up = 0;
+                cntr_clr = 0;
                 if (rco == 1)
                     begin
                     NS = fin;
@@ -132,6 +145,16 @@ module fsm(go, rco, A_out, B_out, out_out, reset_n, ld_odd, odd, up, ld_A, ld_B,
           
           fin:
             begin
+            sel_1 = 1;
+            sel_2 = 1; 
+            ld_A = 0; 
+            ld_B = 0; 
+            ld_out = 0;
+            ld_odd = 0;
+            up = 0;
+            cntr_clr = 1;
+            NS = init;
+
             end
             
           default: NS = init; 

@@ -23,8 +23,8 @@
 module top_lab1(
     input BTN,
     input clk,
-    output [3:0] anodes,
-    output [7:0] segments,
+    output [3:0] an,
+    output [7:0] seg,
     output LEDS
     );
     wire [7:0] sel_A;
@@ -47,9 +47,14 @@ module top_lab1(
     wire [7:0] ram_out;
     wire rco;
     wire cntr_clr;
+    wire ifodd;
+    wire slw_clk;
     
     
-assign we = odd_out[0:0];
+assign ifodd = odd_out[0:0];
+
+//Slowing down the clk to 2Hz clk
+clk_2n_div_test #(.n(24)) MY_DIV (.clockin(clk), .fclk_only(1'b1), .clockout(slw_clk));  // on = in sim, off = board -- for fclk_only
     
 mux_A  #(.n(8)) my_2t1_muxA  (
      .SEL   (sel_A), 
@@ -103,7 +108,7 @@ reg_odd #(.n(8)) REG_ODD (
     .data_out (odd_out)
     );
 
-cntr_up_clr_nb #(.n(4)) MY_CNTR (
+cntr_up_clr_nb #(.n(3)) MY_CNTR (
     .clk   (clk), 
     .clr   (cntr_clr), 
     .up    (up), 
@@ -127,7 +132,8 @@ fsm FSM1 (
     .B_out(B_out), 
     .out_out(out_out),
     .reset_n(1'b1),  
-    .odd(we),
+    .odd(ifodd),
+    .we(we),
     .up(up),
     .ld_odd(ld_odd),
     .ld_A(ld_A), 
@@ -138,5 +144,18 @@ fsm FSM1 (
     .cntr_clr(cntr_clr),
     .clk(clk)
 );    
+
+univ_sseg display(
+    .cnt1({6'b000000, ram_out}), 
+    .cnt2(0),
+    .valid(1'b1), 
+    .dp_sel(2'b00), 
+    .dp_en(1'b0), 
+    .mod_sel(2'b10), 
+    .sign(1'b0),
+    .clk(clk),
+    .ssegs(seg),
+    .disp_en(an));
+
 
 endmodule
